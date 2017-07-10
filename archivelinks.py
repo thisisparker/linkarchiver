@@ -33,7 +33,10 @@ def check_tweet(data):
     if 'entities' in data:
         url_list = grab_urls(data)
         for url in url_list:
-            send_to_archive(url)
+            archive_link = send_to_archive(url)
+            if any(t['screen_name'] == 'LinkArchiver' for t in data['entities']['user_mentions']):
+                tweet_reply(archive_link, data['id_str'], 
+                        data['user']['screen_name'])
     elif 'event' in data:
         print("Some kind of event!")
         if data['event'] == 'follow' and data['source']['screen_name'] != 'LinkArchiver':
@@ -53,6 +56,19 @@ def twitter_follow(screen_name):
     except TwythonError as err:
         print("Had this error, bud: " + str(err))
 
+def tweet_reply(archive_link, tweet_id, screen_name):
+    config = get_config()
+    twitter = get_twitter_instance(config)
+    if archive_link:
+        message = "Here's your archived link: " + archive_link
+    else:
+        message = "Sorry, something went wrong :("
+    try:
+        twitter.update_status(status = "@" + screen_name + " " + message,
+                in_reply_to_status_id = tweet_id)
+    except:
+        pass
+
 def grab_urls(tweet):
     url_list = []
     for url in tweet['entities']['urls']:
@@ -65,10 +81,11 @@ def send_to_archive(link):
     print("Sending {} to the Internet Archive.".format(link))
     if link:
         try:
-            requests.get("https://web.archive.org/save/{}".format(link),
+            res = requests.get("https://web.archive.org/save/{}".format(link),
                     headers = {'user-agent':'@LinkArchiver twitter bot'})
             with open(os.path.join(fullpath,"log.txt"),"a") as f:
                 f.write(link + "\n")
+            return "https://web.archive.org" + res.headers['Content-Location']
         except:
             pass
 def main():

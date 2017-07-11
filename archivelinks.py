@@ -21,8 +21,7 @@ def get_twitter_creds():
     twitter_app_secret = config['twitter_app_secret']
     twitter_oauth_token = config['twitter_oauth_token']
     twitter_oauth_token_secret = config['twitter_oauth_token_secret']
-    return twitter_app_key, twitter_app_secret, twitter_oauth_token,
-        twitter_oauth_token_secret
+    return twitter_app_key, twitter_app_secret, twitter_oauth_token, twitter_oauth_token_secret
 
 def get_stream_instance():
     app_key, app_secret, oauth_token, oauth_token_secret = get_twitter_creds()

@@ -15,26 +15,31 @@ def get_config():
         config = yaml.load(c)
     return config
 
-def get_stream_instance(config):
+def get_twitter_creds():
+    config = get_config()
     twitter_app_key = config['twitter_app_key']
     twitter_app_secret = config['twitter_app_secret']
     twitter_oauth_token = config['twitter_oauth_token']
     twitter_oauth_token_secret = config['twitter_oauth_token_secret']
-    return TwythonStreamer(twitter_app_key, twitter_app_secret, twitter_oauth_token, twitter_oauth_token_secret)
+    return twitter_app_key, twitter_app_secret, twitter_oauth_token,
+        twitter_oauth_token_secret
 
-def get_twitter_instance(config):
-    twitter_app_key = config['twitter_app_key']
-    twitter_app_secret = config['twitter_app_secret']
-    twitter_oauth_token = config['twitter_oauth_token']
-    twitter_oauth_token_secret = config['twitter_oauth_token_secret']
-    return Twython(twitter_app_key, twitter_app_secret, twitter_oauth_token, twitter_oauth_token_secret)
+def get_stream_instance():
+    app_key, app_secret, oauth_token, oauth_token_secret = get_twitter_creds()
+    return TwythonStreamer(app_key, app_secret, oauth_token, oauth_token_secret)
+
+def get_twitter_instance():
+    app_key, app_secret, oauth_token, oauth_token_secret = get_twitter_creds()
+    return Twython(app_key, app_secret, oauth_token, oauth_token_secret)
 
 def check_tweet(data):
     if 'entities' in data:
         url_list = grab_urls(data)
+        screen_names = [user['screen_name'] for user in 
+                data['entities']['user_mentions']]
         for url in url_list:
             archive_link = send_to_archive(url)
-            if any(t['screen_name'] == 'LinkArchiver' for t in data['entities']['user_mentions']):
+            if 'LinkArchiver' in screen_names:
                 tweet_reply(archive_link, data['id_str'], 
                         data['user']['screen_name'])
     elif 'event' in data:
@@ -49,16 +54,14 @@ def log_failure(status_code, data):
     print("Something's gone terribly wrong: " + str(status_code) + " " + str(data))
 
 def twitter_follow(screen_name):
-    config = get_config()
-    twitter = get_twitter_instance(config)
+    twitter = get_twitter_instance()
     try:
-        twitter.create_friendship(screen_name=screen_name)
+        twitter.create_friendship(screen_name = screen_name)
     except TwythonError as err:
         print("Had this error, bud: " + str(err))
 
 def tweet_reply(archive_link, tweet_id, screen_name):
-    config = get_config()
-    twitter = get_twitter_instance(config)
+    twitter = get_twitter_instance()
     if archive_link:
         message = "Here's your archived link: " + archive_link
     else:
@@ -73,7 +76,6 @@ def grab_urls(tweet):
     url_list = []
     for url in tweet['entities']['urls']:
         if url['expanded_url']:
-            print("Adding {} to the list of URLs to be archived.".format(url['expanded_url']))
             url_list.append(url['expanded_url'])
     return url_list
 
@@ -88,10 +90,9 @@ def send_to_archive(link):
             return "https://web.archive.org" + res.headers['Content-Location']
         except:
             pass
+
 def main():
-    config = get_config()
-    twitter = get_twitter_instance(config)
-    streamer = get_stream_instance(config)
+    streamer = get_stream_instance()
 
     streamer.on_success = check_tweet
     streamer.on_error = log_failure

@@ -8,19 +8,18 @@ import yaml
 from twython import Twython, TwythonStreamer, TwythonError
 
 fullpath = os.path.dirname(os.path.realpath(__file__))
-CONFIG = os.path.join(fullpath, "config.yaml")
+CONFIGFILE = os.path.join(fullpath, "config.yaml")
 
-def get_config():
-    with open(CONFIG,'r') as c:
-        config = yaml.load(c)
-    return config
+with open(CONFIGFILE, 'r') as c:
+    CONFIG = yaml.load(c)
+
+SCREEN_NAME = CONFIG['twitter_bot_name']
 
 def get_twitter_creds():
-    config = get_config()
-    twitter_app_key = config['twitter_app_key']
-    twitter_app_secret = config['twitter_app_secret']
-    twitter_oauth_token = config['twitter_oauth_token']
-    twitter_oauth_token_secret = config['twitter_oauth_token_secret']
+    twitter_app_key = CONFIG['twitter_app_key']
+    twitter_app_secret = CONFIG['twitter_app_secret']
+    twitter_oauth_token = CONFIG['twitter_oauth_token']
+    twitter_oauth_token_secret = CONFIG['twitter_oauth_token_secret']
     return twitter_app_key, twitter_app_secret, twitter_oauth_token, twitter_oauth_token_secret
 
 def get_stream_instance():
@@ -38,12 +37,13 @@ def check_tweet(data):
                 data['entities']['user_mentions']]
         for url in url_list:
             archive_link = send_to_archive(url)
-            if 'LinkArchiver' in screen_names:
-                tweet_reply(archive_link, data['id_str'], 
+            if SCREEN_NAME in screen_names:
+                tweet_reply(
+                        archive_link, data['id_str'], 
                         data['user']['screen_name'])
     elif 'event' in data:
         print("Some kind of event!")
-        if data['event'] == 'follow' and data['source']['screen_name'] != 'LinkArchiver':
+        if data['event'] == 'follow' and data['source']['screen_name'] != SCREEN_NAME:
             print("I'm gonna follow {}.".format(data['source']['screen_name']))
             twitter_follow(data['source']['screen_name'])
     else:
@@ -83,7 +83,7 @@ def send_to_archive(link):
     if link:
         try:
             res = requests.get("https://web.archive.org/save/{}".format(link),
-                    headers = {'user-agent':'@LinkArchiver twitter bot'})
+                    headers = {'user-agent':'@{} twitter bot'.format(SCREEN_NAME)})
             with open(os.path.join(fullpath,"log.txt"),"a") as f:
                 f.write(link + "\n")
             return "https://web.archive.org" + res.headers['Content-Location']

@@ -1,0 +1,11 @@
+# Get Twitter app credentials by creating a new app at
+# https://apps.twitter.com/, which will show you the app key and
+# app secret. You can also generate and Oauth token and secret
+# on that page, or use Twython to authenticate.
+twitter_app_key: 
+twitter_app_secret: 
+twitter_oauth_token: 
+twitter_oauth_token_secret: 
+
+# Enter the screenname of your bot here. This is the @-name, but without the @.
+twitter_bot_name:

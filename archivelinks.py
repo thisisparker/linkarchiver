@@ -15,7 +15,7 @@ CONFIGFILE = os.path.join(fullpath, "config.yaml")
 with open(CONFIGFILE, 'r') as c:
     CONFIG = yaml.load(c)
 
-DB = CONFIG['db']
+DB = os.path.join(fullpath, CONFIG['db'])
 conn = sqlite3.connect(DB)
 cur = conn.cursor()
 

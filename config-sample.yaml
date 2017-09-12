@@ -9,3 +9,6 @@ twitter_oauth_token_secret:
 
 # Enter the screenname of your bot here. This is the @-name, but without the @.
 twitter_bot_name:
+
+# The name of the database file the bot will log archive requests to
+db:

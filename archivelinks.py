@@ -2,8 +2,10 @@
 
 # Listens to a Twitter timeline and sends tweeted URLs to the Internet Archive.
 
+import datetime
 import os
 import requests
+import sqlite3
 import yaml
 from twython import Twython, TwythonStreamer, TwythonError
 
@@ -12,6 +14,10 @@ CONFIGFILE = os.path.join(fullpath, "config.yaml")
 
 with open(CONFIGFILE, 'r') as c:
     CONFIG = yaml.load(c)
+
+DB = CONFIG['db']
+conn = sqlite3.connect(DB)
+cur = conn.cursor()
 
 SCREEN_NAME = CONFIG['twitter_bot_name']
 
@@ -35,8 +41,10 @@ def check_tweet(data):
         url_list = grab_urls(data)
         screen_names = [user['screen_name'] for user in 
                 data['entities']['user_mentions']]
+        tweet_id = data['id_str']
+        tweeter = data['user']['screen_name']
         for url in url_list:
-            archive_link = send_to_archive(url)
+            archive_link = send_to_archive(url, tweet_id, tweeter)
             if SCREEN_NAME in screen_names:
                 tweet_reply(
                         archive_link, data['id_str'], 
@@ -78,17 +86,23 @@ def grab_urls(tweet):
             url_list.append(url['expanded_url'])
     return url_list
 
-def send_to_archive(link):
+def send_to_archive(link, tweet_id, tweeter):
     print("Sending {} to the Internet Archive.".format(link))
-    if link:
-        try:
-            res = requests.get("https://web.archive.org/save/{}".format(link),
-                    headers = {'user-agent':'@{} twitter bot'.format(SCREEN_NAME)})
-            with open(os.path.join(fullpath,"log.txt"),"a") as f:
-                f.write(link + "\n")
-            return "https://web.archive.org" + res.headers['Content-Location']
-        except:
-            pass
+    try:
+        res = requests.get("https://web.archive.org/save/{}".format(link),
+                headers = {'user-agent':'@{} twitter bot'.format(SCREEN_NAME)})
+        nowstring = str(datetime.datetime.utcnow())
+        
+        cur.execute("""
+            insert into links (url, tweeter, tweet_id, time)
+            values ('{link}','{tweeter}','{tweet_id}','{nowstring}')
+            """.format(**locals()))
+        print("attempting to write to db")
+        conn.commit()
+    except:
+        pass
+
+    return "https://web.archive.org" + res.headers['Content-Location']
 
 def main():
     streamer = get_stream_instance()

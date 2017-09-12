@@ -91,6 +91,7 @@ def send_to_archive(link, tweet_id, tweeter):
     try:
         res = requests.get("https://web.archive.org/save/{}".format(link),
                 headers = {'user-agent':'@{} twitter bot'.format(SCREEN_NAME)})
+       
         nowstring = str(datetime.datetime.utcnow())
         
         cur.execute("""
@@ -99,10 +100,12 @@ def send_to_archive(link, tweet_id, tweeter):
             """.format(**locals()))
         print("attempting to write to db")
         conn.commit()
-    except:
-        pass
+    
+        return "https://web.archive.org" + res.headers['Content-Location']
 
-    return "https://web.archive.org" + res.headers['Content-Location']
+    except:
+        return None
+
 
 def main():
     streamer = get_stream_instance()

@@ -3,6 +3,7 @@
 # Listens to a Twitter timeline and sends tweeted URLs to the Internet Archive.
 
 import datetime
+import http
 import os
 import requests
 import sqlite3
@@ -106,14 +107,19 @@ def send_to_archive(link, tweet_id, tweeter):
     except:
         return None
 
-
-def main():
+def do_the_streaming():
     streamer = get_stream_instance()
 
     streamer.on_success = check_tweet
     streamer.on_error = log_failure
 
-    streamer.user(replies=all)
+    try:
+        streamer.user(replies=all)
+    except http.client.IncompleteRead:
+        do_the_streaming()
+
+def main():
+    do_the_streaming()
 
 if __name__ == '__main__':
     main()

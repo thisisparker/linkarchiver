@@ -92,16 +92,16 @@ def send_to_archive(link, tweet_id, tweeter):
     try:
         res = requests.get("https://web.archive.org/save/{}".format(link),
                 headers = {'user-agent':'@{} twitter bot'.format(SCREEN_NAME)})
-       
+
         nowstring = str(datetime.datetime.utcnow())
-        
+
         cur.execute("""
             insert into links (url, tweeter, tweet_id, time)
             values ('{link}','{tweeter}','{tweet_id}','{nowstring}')
             """.format(**locals()))
         print("attempting to write to db")
         conn.commit()
-    
+
         return "https://web.archive.org" + res.headers['Content-Location']
 
     except:
